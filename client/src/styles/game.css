@@ -1,0 +1,144 @@
+.team-selection {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.team-selection h2 {
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.teams {
+  display: flex;
+  gap: 2rem;
+}
+
+.teams button {
+  width: 200px;
+  height: 200px;
+  font-size: 1.5rem;
+  border-radius: 20px;
+}
+
+.game-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+
+.status.waiting {
+  background: #f39c12;
+}
+
+.status.active {
+  background: #2ecc71;
+}
+
+.status.finished {
+  background: #e74c3c;
+}
+
+.race-tracks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  margin-bottom: 2rem;
+}
+
+.track {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.track-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.track-line {
+  position: relative;
+  height: 60px;
+  background: #1a1a1a;
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.vehicle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  transition: left 0.3s ease-out;
+}
+
+.tap-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  background: linear-gradient(to top, #667eea, #764ba2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tap-area:active {
+  background: linear-gradient(to top, #764ba2, #667eea);
+}
+
+.tap-area h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-over {
+  text-align: center;
+  padding: 2rem;
+  background: #2a2a2a;
+  border-radius: 12px;
+  margin-top: 2rem;
+}
+
+.game-over h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .teams {
+    flex-direction: column;
+  }
+  
+  .teams button {
+    width: 150px;
+    height: 150px;
+  }
+}
