@@ -8,7 +8,7 @@ COPY package*.json ./
 #COPY shared/package*.json ./shared/
 
 # Instalar dependencias
-RUN npm ci --only=production
+RUN npm ci
 
 # Copiar código fuente
 COPY . .
@@ -25,7 +25,7 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/shared ./shared
 
 # Variables de entorno (se sobreescriben en runtime)
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV PORT=3001
 
 # Exponer puerto
