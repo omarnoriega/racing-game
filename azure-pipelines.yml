@@ -22,7 +22,7 @@ pr:
 variables:
   # Azure Container Registry
   - name: acrName
-    value: 'racinggameacr' 
+    value: 'racinggamecr' 
   - name: acrLoginServer
     value: '$(acrName).azurecr.io'
   
