@@ -32,7 +32,7 @@ variables:
     value: 'racing-game-aks'  
   
   # Variable Group
-  - group: 'racing-game-config'
+  - group: 'racing-game-config-aks'
 
 stages:
   - stage: Build
