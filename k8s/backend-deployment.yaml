@@ -41,11 +41,6 @@ spec:
             configMapKeyRef:
               name: racing-game-config
               key: PORT
-        - name: MONGODB_URI
-          valueFrom:
-            secretKeyRef:
-              name: racing-game-secrets
-              key: mongodb-uri
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:

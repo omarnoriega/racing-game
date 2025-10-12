@@ -64,6 +64,14 @@ kubectl wait --namespace cert-manager \
   --selector=app.kubernetes.io/instance=cert-manager \
   --timeout=300s
 
+# Crear secret para JWT
+JWT_SECRET=$(openssl rand -hex 64)
+kubectl create secret generic racing-game-secrets \
+  --namespace default \
+  --from-literal=jwt-secret="$JWT_SECRET"
+
+echo "✅ Secrets creados"
+
 # Crear secret para ACR
 echo "🔐 Creando secrets..."
 kubectl create secret docker-registry acr-secret \
@@ -72,14 +80,6 @@ kubectl create secret docker-registry acr-secret \
   --docker-username=$(az acr credential show --name $ACR_NAME --query username -o tsv) \
   --docker-password=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
 
-# Crear secret para MongoDB y JWT
-JWT_SECRET=$(openssl rand -hex 64)
-kubectl create secret generic racing-game-secrets \
-  --namespace racing-game \
-  --from-literal=mongodb-uri="$MONGODB_URI" \
-  --from-literal=jwt-secret="$JWT_SECRET"
-
-echo "✅ Secrets creados"
 
 # Obtener IP pública del Ingress
 echo "⏳ Esperando IP pública del Ingress..."
