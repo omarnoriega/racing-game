@@ -19,11 +19,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - racing-game.example.com  # TODO: Tu dominio
-    - api.racing-game.example.com  # TODO: Tu dominio
+    - racing-game-demo.westus2.cloudapp.azure.com  # TODO: Tu dominio
     secretName: racing-game-tls
   rules:
-  - host: racing-game.example.com  # TODO: Tu dominio (frontend)
+  - host: racing-game-demo.westus2.cloudapp.azure.com  # TODO: Tu dominio (frontend)
     http:
       paths:
       - path: /
@@ -33,10 +32,10 @@ spec:
             name: racing-game-frontend
             port:
               number: 80
-  - host: api.racing-game.example.com  # TODO: Tu dominio (backend)
+  - host: racing-game-demo.westus2.cloudapp.azure.com  # TODO: Tu dominio (backend)
     http:
       paths:
-      - path: /
+      - path: /api
         pathType: Prefix
         backend:
           service:

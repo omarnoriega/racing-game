@@ -7,7 +7,7 @@ metadata:
     app: racing-game-frontend
     version: v1
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: <ACR_NAME>.azurecr.io/racing-game-frontend:latest  # TODO: Reemplazar ACR_NAME
+        image: racinggamecr.azurecr.io/racing-game-frontend:latest 
         imagePullPolicy: Always
         ports:
         - containerPort: 80

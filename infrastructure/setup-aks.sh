@@ -31,29 +31,6 @@ if [ ! -z "$SUBSCRIPTION_ID" ]; then
   az account set --subscription $SUBSCRIPTION_ID
 fi
 
-# Crear Resource Group
-echo "📦 Creando Resource Group..."
-az group create \
-  --name $RESOURCE_GROUP \
-  --location $LOCATION
-
-# Crear AKS con integración ACR
-echo "☸️  Creando AKS cluster (esto puede tardar 10-15 minutos)..."
-az aks create \
-  --name $AKS_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --node-count $NODE_COUNT \
-  --node-vm-size $NODE_SIZE \
-  --network-plugin azure \
-  --enable-managed-identity \
-  --attach-acr $ACR_NAME \
-  --enable-addons monitoring \
-  --generate-ssh-keys \
-  --tier free
-
-echo "✅ AKS cluster creado"
-
 # Obtener credenciales de kubectl
 echo "🔧 Configurando kubectl..."
 az aks get-credentials \

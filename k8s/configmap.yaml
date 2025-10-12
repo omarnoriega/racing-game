@@ -9,5 +9,5 @@ data:
   PORT: "3001"
   
   # Frontend config (URLs se actualizan después del despliegue)
-  REACT_APP_API_URL: ""  # TODO: URL del backend
-  REACT_APP_WS_URL: ""   # TODO: URL del backend
+  REACT_APP_API_URL: "racing-game-demo.westus2.cloudapp.azure.com/api"  # TODO: URL del backend
+  REACT_APP_WS_URL: "racing-game-demo.westus2.cloudapp.azure.com/api"   # TODO: URL del backend
