@@ -87,10 +87,6 @@ kubectl wait --namespace cert-manager \
   --selector=app.kubernetes.io/instance=cert-manager \
   --timeout=300s
 
-# Crear namespace
-echo "📛 Creando namespace..."
-kubectl create namespace racing-game
-
 # Crear secret para ACR
 echo "🔐 Creando secrets..."
 kubectl create secret docker-registry acr-secret \
