@@ -1,0 +1,187 @@
+# Azure DevOps Pipeline para AKS
+trigger:
+  branches:
+    include:
+      - master
+      - develop
+  paths:
+    include:
+      - client/*
+      - server/*
+      - k8s/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  # ACR y AKS
+  - name: acrName
+    value: 'racinggamecr'  # TODO: Nombre de tu ACR
+  - name: acrLoginServer
+    value: '$(acrName).azurecr.io'
+  - name: aksName
+    value: 'racing-game-aks'
+  - name: resourceGroup
+    value: 'racing-game-rg'
+  
+  # Docker Images
+  - name: backendImage
+    value: 'racing-game-backend'
+  - name: frontendImage
+    value: 'racing-game-frontend'
+  - name: imageTag
+    value: '$(Build.BuildId)'
+  
+  # Service Connection
+  - name: azureSubscription
+    value: '556b812f-3bdd-4e65-bdbc-c982a185ce9b'  # TODO: Nombre de tu service connection
+  - name: k8sServiceConnection
+    value: 'racing-game-aks'  # TODO: Nombre de tu k8s service connection
+  
+  # Variable Group
+  - group: 'racing-game-config'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Push'
+    jobs:
+      - job: BuildImages
+        displayName: 'Build Docker Images'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: login
+              containerRegistry: '$(acrName)'
+
+          - task: Docker@2
+            displayName: 'Build Backend Image'
+            inputs:
+              command: build
+              repository: $(backendImage)
+              dockerfile: 'server/Dockerfile'
+              containerRegistry: '$(acrName)'
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Backend Image'
+            inputs:
+              command: push
+              repository: $(backendImage)
+              containerRegistry: '$(acrName)'
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Build Frontend Image'
+            inputs:
+              command: build
+              repository: $(frontendImage)
+              dockerfile: 'client/Dockerfile'
+              containerRegistry: '$(acrName)'
+              arguments: |
+                --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
+                --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Frontend Image'
+            inputs:
+              command: push
+              repository: $(frontendImage)
+              containerRegistry: '$(acrName)'
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish K8s Manifests'
+            inputs:
+              targetPath: 'k8s'
+              artifact: 'manifests'
+
+  - stage: DeployDev
+    displayName: 'Deploy to Development'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployToDev
+        displayName: 'Deploy to Dev'
+        environment: 'Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: 'manifests'
+                    path: '$(Pipeline.Workspace)/manifests'
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply namespace'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/namespace.yaml'
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply configmap'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'racing-game'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/configmap.yaml'
+
+                - task: KubernetesManifest@0
+                  displayName: 'Deploy Backend'
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: '$(k8sServiceConnection)'
+                    namespace: 'racing-game'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/backend-deployment.yaml
+                    containers: |
+                      $(acrLoginServer)/$(backendImage):$(imageTag)
+
+                - task: KubernetesManifest@0
+                  displayName: 'Deploy Frontend'
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: '$(k8sServiceConnection)'
+                    namespace: 'racing-game'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/frontend-deployment.yaml
+                    containers: |
+                      $(acrLoginServer)/$(frontendImage):$(imageTag)
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply ingress'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'racing-game'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/ingress.yaml'
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply hpa'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'racing-game'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/hpa.yaml'

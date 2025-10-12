@@ -1,18 +1,7 @@
 # Azure DevOps Pipeline - Racing Game
 # CI/CD para Azure Container Apps
 
-trigger:
-  branches:
-    include:
-      - main
-      - develop
-  paths:
-    include:
-      - client/*
-      - server/*
-      - shared/*
-      - azure-pipelines.yml
-
+trigger: none
 pr:
   branches:
     include:

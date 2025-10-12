@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: racing-game-config
+  namespace: racing-game
+data:
+  # Backend config
+  NODE_ENV: "production"
+  PORT: "3001"
+  
+  # Frontend config (URLs se actualizan después del despliegue)
+  REACT_APP_API_URL: ""  # TODO: URL del backend
+  REACT_APP_WS_URL: ""   # TODO: URL del backend
