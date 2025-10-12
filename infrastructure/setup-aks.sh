@@ -67,7 +67,7 @@ kubectl wait --namespace cert-manager \
 # Crear secret para ACR
 echo "🔐 Creando secrets..."
 kubectl create secret docker-registry acr-secret \
-  --namespace racing-game \
+  --namespace default \
   --docker-server=$ACR_NAME.azurecr.io \
   --docker-username=$(az acr credential show --name $ACR_NAME --query username -o tsv) \
   --docker-password=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
