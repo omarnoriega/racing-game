@@ -12,10 +12,12 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 const server = http.createServer(app);
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://192.168.11.17:3000',
-    methods: ['GET', 'POST']
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -45,6 +47,7 @@ app.get('/health', (req, res) => {
 
 // Error handler
 app.use(errorHandler);
+
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
