@@ -1,15 +1,5 @@
 # Azure DevOps Pipeline para AKS
-trigger:
-  branches:
-    include:
-      - master
-      - develop
-  paths:
-    include:
-      - client/*
-      - server/*
-      - k8s/*
-
+trigger: none
 pr:
   branches:
     include:
