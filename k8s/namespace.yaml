@@ -4,4 +4,4 @@ metadata:
   name: racing-game
   labels:
     name: racing-game
-    environment: production
+    environment: development
