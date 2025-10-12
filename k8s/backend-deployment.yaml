@@ -52,7 +52,7 @@ spec:
               name: racing-game-secrets
               key: jwt-secret
         - name: CORS_ORIGIN
-          value: "*"  # Se actualiza con el dominio real
+          value: "racing-game-demo.westus2.cloudapp.azure.com"  # Se actualiza con el dominio real
         resources:
           requests:
             memory: "256Mi"
