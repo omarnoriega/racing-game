@@ -62,35 +62,12 @@ ACR_PASSWORD=$(az acr credential show \
 
 echo "✅ ACR creado: $ACR_LOGIN_SERVER"
 
-# Crear Log Analytics Workspace
-echo "📊 Creando Log Analytics Workspace..."
-az monitor log-analytics workspace create \
-  --resource-group $RESOURCE_GROUP \
-  --workspace-name $LOG_ANALYTICS_WORKSPACE \
-  --location $LOCATION
-
-LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show \
-  --resource-group $RESOURCE_GROUP \
-  --workspace-name $LOG_ANALYTICS_WORKSPACE \
-  --query customerId \
-  --output tsv)
-
-LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys \
-  --resource-group $RESOURCE_GROUP \
-  --workspace-name $LOG_ANALYTICS_WORKSPACE \
-  --query primarySharedKey \
-  --output tsv)
-
-echo "✅ Log Analytics creado"
-
 # Crear Container Apps Environment
 echo "🏗️  Creando Container Apps Environment..."
 az containerapp env create \
   --name $ENVIRONMENT_NAME \
   --resource-group $RESOURCE_GROUP \
   --location $LOCATION \
-  --logs-workspace-id $LOG_ANALYTICS_ID \
-  --logs-workspace-key $LOG_ANALYTICS_KEY
 
 echo "✅ Container Apps Environment creado"
 
@@ -111,10 +88,8 @@ az containerapp create \
   --registry-username $ACR_USERNAME \
   --registry-password $ACR_PASSWORD \
   --env-vars \
-    NODE_ENV=production \
+    NODE_ENV=development \
     PORT=3001 \
-    MONGODB_URI="$MONGODB_URI" \
-    JWT_SECRET=changeme-in-production \
     CORS_ORIGIN=https://$FRONTEND_APP_NAME.${LOCATION}.azurecontainerapps.io
 
 BACKEND_URL=$(az containerapp show \
