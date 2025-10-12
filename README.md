@@ -71,3 +71,29 @@ MIT
 ## 👥 Contribuir
 
 Las contribuciones son bienvenidas. Por favor, crea un issue primero para discutir los cambios.
+
+## 🎮 Configuración del Juego
+
+### Presets Disponibles
+
+- **Carrera Rápida ⚡**: 500m, 2m/tap, 1 minuto
+- **Carrera Normal 🏁**: 1000m, 1m/tap, 2 minutos
+- **Maratón 🎯**: 2000m, 1m/tap, 5 minutos
+- **Resistencia 💪**: 3000m, 1m/tap, sin límite
+- **Personalizada ⚙️**: Configura todos los parámetros
+
+### Parámetros Configurables
+
+- **Longitud del Circuito**: 100-10000 metros
+- **Potencia por Tap**: 1-10 metros
+- **Cooldown entre Taps**: 50-1000 milisegundos
+- **Duración Máxima**: 30-600 segundos (opcional)
+
+## 📊 Estadísticas
+
+Al finalizar cada partida podrás ver:
+- Duración total de la carrera
+- Ganador y distancia final
+- Total de taps de ambos equipos
+- Estadísticas por equipo
+- Promedio de taps por jugador

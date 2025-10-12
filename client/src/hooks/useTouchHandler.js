@@ -1,20 +1,19 @@
 import { useState, useCallback } from 'react';
-import { GAME_CONFIG } from '../constants/gameConstants';
 
-export function useTouchHandler(onTap) {
+export function useTouchHandler(onTap, cooldownMs = 100) {
   const [lastTapTime, setLastTapTime] = useState(0);
 
   const handleTouch = useCallback((e) => {
     e.preventDefault();
 
     const now = Date.now();
-    if (now - lastTapTime < GAME_CONFIG.TAP_COOLDOWN_MS) {
+    if (now - lastTapTime < cooldownMs) {
       return;
     }
 
     setLastTapTime(now);
     onTap();
-  }, [lastTapTime, onTap]);
+  }, [lastTapTime, cooldownMs, onTap]);
 
   return { handleTouch };
 }

@@ -1,46 +1,94 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGameState } from '../hooks/useGameState';
 import { useTouchHandler } from '../hooks/useTouchHandler';
 import { TEAM_COLORS, GAME_CONFIG } from '../constants/gameConstants';
+import ShareGameModal from '../components/game/ShareGameModal';
+import { formatGameId } from '../utils/helpers';
 import '../styles/game.css';
+import GameTimer from '../components/game/GameTimer';
+import GameStats from '../components/game/GameStats';
+import { socketService } from '../services/socketService';
+import { addRecentGame } from '../utils/localStorage';
+
 
 function Game() {
   const { gameId } = useParams();
   const [playerId] = useState(`player-${Date.now()}`);
   const [selectedTeam, setSelectedTeam] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [gameConfig, setGameConfig] = useState(null);
   
+
   const { gameState, isConnected, sendTap } = useGameState(
     gameId, 
     playerId, 
     selectedTeam
   );
 
+  useEffect(() => {
+    const socket = socketService.connect();
+    
+    // Obtener configuración del juego
+    socket.emit('game:getConfig', { gameId });
+    
+    socket.on('game:config', ({ config }) => {
+      setGameConfig(config);
+    });
+
+     if (gameId) {
+    addRecentGame(gameId);
+    };
+
+    return () => {
+      socket.off('game:config');
+    };
+  }, [gameId]);
+
   const { handleTouch } = useTouchHandler(sendTap);
 
   if (!selectedTeam) {
     return (
       <div className="team-selection">
+        <div className="game-id-banner">
+          <span className="label">Código de partida:</span>
+          <span className="id">{formatGameId(gameId)}</span>
+          <button 
+            className="share-btn-mini"
+            onClick={() => setShowShareModal(true)}
+          >
+            📤 Compartir
+          </button>
+        </div>
+
         <h2>Selecciona tu equipo</h2>
         <div className="teams">
           <button
             onClick={() => setSelectedTeam('teamA')}
             style={{ backgroundColor: TEAM_COLORS.teamA }}
           >
-            Equipo Rojo
+            🔴 Equipo Rojo
           </button>
           <button
             onClick={() => setSelectedTeam('teamB')}
             style={{ backgroundColor: TEAM_COLORS.teamB }}
           >
-            Equipo Azul
+            🔵 Equipo Azul
           </button>
         </div>
+
+      {showShareModal && (
+          <ShareGameModal
+            gameId={gameId}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
+
       </div>
     );
   }
 
-  if (!gameState) {
+  if (!gameState || !gameConfig) {
     return <div className="loading">Cargando juego...</div>;
   }
 
@@ -55,13 +103,35 @@ function Game() {
   return (
     <div className="game-screen">
       <div className="game-header">
+        <div className="game-id-display-mini">
+          <span>{formatGameId(gameId)}</span>
+          <button 
+            className="share-icon-btn"
+            onClick={() => setShowShareModal(true)}
+            title="Compartir partida"
+          >
+            📤
+          </button>
+        </div>
         <h3>Partida: {gameId}</h3>
+        <div className="game-config-display">
+          <span>🏁 {gameConfig.TRACK_LENGTH}m</span>
+          <span>⚡ {gameConfig.TAP_POWER}m/tap</span>
+        </div>
         <div className={`status ${gameState.status}`}>
           {gameState.status === 'waiting' && '⏸️ Esperando inicio...'}
           {gameState.status === 'active' && '🏁 ¡CARRERA!'}
           {gameState.status === 'finished' && '🏆 Finalizada'}
         </div>
       </div>
+
+          {/* Timer si hay duración configurada */}
+          {gameState.status === 'active' && gameConfig.GAME_DURATION_MS && (
+            <GameTimer 
+              startTime={gameState.startTime}
+              duration={gameConfig.GAME_DURATION_MS}
+            />
+          )}
 
       <div className="race-tracks">
         {/* Tu equipo */}
@@ -111,20 +181,19 @@ function Game() {
         >
           <h1>¡TAP AQUÍ!</h1>
           <p>Impulsa a tu equipo</p>
+          <p>+{gameConfig.TAP_POWER}m por tap</p>
         </div>
       )}
 
       {gameState.status === 'finished' && (
-        <div className="game-over">
-          <h2>
-            {gameState.winner === selectedTeam 
-              ? '🎉 ¡GANASTE!' 
-              : '😔 Perdiste'}
-          </h2>
-          <p>
-            Ganador: {gameState.teams[gameState.winner].name}
-          </p>
-        </div>
+      <GameStats gameState={gameState} myTeam={selectedTeam} />
+      )}
+
+       {showShareModal && (
+        <ShareGameModal
+          gameId={gameId}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { socketService } from '../services/socketService';
+import { cleanGameId, formatGameId } from '../utils/helpers';
 import '../styles/backoffice.css';
 
 function Backoffice() {
   const [gameId, setGameId] = useState('');
+  const [displayId, setDisplayId] = useState('');
   const [gameState, setGameState] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -26,10 +28,19 @@ function Backoffice() {
       socketService.disconnect();
     };
   }, []);
-
+/*
   const loadGame = () => {
     if (gameId.trim()) {
       socketService.joinGame(gameId, 'admin', 'teamA');
+    }
+  };
+*/
+
+  const loadGame = () => {
+    const cleanId = cleanGameId(gameId);
+    if (cleanId.trim()) {
+      socketService.joinGame(cleanId, 'admin', 'teamA');
+      setDisplayId(formatGameId(cleanId));
     }
   };
 
@@ -61,18 +72,55 @@ function Backoffice() {
           <div className="input-group">
             <input
               type="text"
-              placeholder="ID de Partida"
+              placeholder="Ej: ABC-123 o ABC123"
               value={gameId}
               onChange={(e) => setGameId(e.target.value)}
+              maxLength="7"
             />
             <button onClick={loadGame} className="btn-load">
               Cargar Partida
             </button>
           </div>
 
+          {displayId && (
+              <div className="loaded-game-id">
+                Partida cargada: <strong>{displayId}</strong>
+              </div>
+            )}
+
           {gameState && (
             <>
               <div className="game-info">
+
+                {gameState && gameState.config && (
+                <div className="config-info">
+                  <h3>⚙️ Configuración de la Partida</h3>
+                  <div className="config-grid">
+                    <div className="config-item">
+                      <span>🏁 Circuito:</span>
+                      <span>{gameState.config.TRACK_LENGTH}m</span>
+                    </div>
+                    <div className="config-item">
+                      <span>⚡ Potencia:</span>
+                      <span>{gameState.config.TAP_POWER}m/tap</span>
+                    </div>
+                    <div className="config-item">
+                      <span>⏱️ Cooldown:</span>
+                      <span>{gameState.config.TAP_COOLDOWN_MS}ms</span>
+                    </div>
+                    <div className="config-item">
+                      <span>⏳ Duración:</span>
+                      <span>
+                        {gameState.config.GAME_DURATION_MS 
+                          ? `${gameState.config.GAME_DURATION_MS / 1000}s`
+                          : 'Sin límite'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
                 <div className="info-card">
                   <h3>Estado</h3>
                   <p className={`status-badge ${gameState.status}`}>
@@ -125,7 +173,7 @@ function Backoffice() {
                         </span>
                       </div>
                       <div className="stat-item">
-                        <span className="label">Posición</span>
+                        <span className="label">Distancia</span>
                         <span className="value">
                           {gameState.teams.teamA.position}m
                         </span>
@@ -160,7 +208,7 @@ function Backoffice() {
                         </span>
                       </div>
                       <div className="stat-item">
-                        <span className="label">Posición</span>
+                        <span className="label">Distancia</span>
                         <span className="value">
                           {gameState.teams.teamB.position}m
                         </span>
