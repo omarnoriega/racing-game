@@ -9,7 +9,7 @@ pr:
 variables:
   # ACR y AKS
   - name: acrName
-    value: 'racinggamecr'  # TODO: Nombre de tu ACR
+    value: 'racinggamecr'  
   - name: acrLoginServer
     value: '$(acrName).azurecr.io'
   - name: aksName
@@ -27,9 +27,9 @@ variables:
   
   # Service Connection
   - name: azureSubscription
-    value: '556b812f-3bdd-4e65-bdbc-c982a185ce9b'  # TODO: Nombre de tu service connection
+    value: '556b812f-3bdd-4e65-bdbc-c982a185ce9b'  
   - name: k8sServiceConnection
-    value: 'racing-game-aks'  # TODO: Nombre de tu k8s service connection
+    value: 'racing-game-aks'  
   
   # Variable Group
   - group: 'racing-game-config'
