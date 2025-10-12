@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: racing-game-config
-  namespace: racing-game
+  namespace: default
 data:
   # Backend config
   NODE_ENV: "development"

@@ -130,14 +130,6 @@ stages:
                     path: '$(Pipeline.Workspace)/manifests'
 
                 - task: Kubernetes@1
-                  displayName: 'kubectl apply namespace'
-                  inputs:
-                    connectionType: 'Kubernetes Service Connection'
-                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
-                    command: 'apply'
-                    arguments: '-f $(Pipeline.Workspace)/manifests/namespace.yaml'
-
-                - task: Kubernetes@1
                   displayName: 'kubectl apply configmap'
                   inputs:
                     connectionType: 'Kubernetes Service Connection'
