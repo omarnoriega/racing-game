@@ -139,7 +139,6 @@ stages:
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
-                          MONGODB_URI=$(MONGODB_URI_DEV) \
                           JWT_SECRET=$(JWT_SECRET) \
                           CORS_ORIGIN=$(CORS_ORIGIN_DEV)
 
