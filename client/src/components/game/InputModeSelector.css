@@ -1,0 +1,102 @@
+.input-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.input-mode-modal {
+  background: #1a1a1a;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.input-mode-modal h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.input-mode-modal > p {
+  color: #888;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.mode-option {
+  background: #2a2a2a;
+  border: 3px solid #333;
+  padding: 1.5rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.mode-option:hover {
+  border-color: #667eea;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.mode-option.motion:hover {
+  border-color: #2ecc71;
+}
+
+.mode-option.tap:hover {
+  border-color: #3498db;
+}
+
+.mode-option.hybrid:hover {
+  border-color: #f39c12;
+}
+
+.mode-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.mode-option h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.mode-option p {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.recommended {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .mode-options {
+    grid-template-columns: 1fr;
+  }
+}

@@ -199,6 +199,15 @@ export const socketService = new SocketService();
   isConnected() {
     return this.socket?.connected || false;
   }
+
+  sendTapWithIntensity(gameId, teamId, intensity) {
+    if (!this.socket || !this.socket.connected) {
+      console.error('❌ Socket not connected');
+      return;
+    }
+    this.socket.emit('player:tap', { gameId, teamId, intensity });
+  }
+
 }
 
 export const socketService = new SocketService();
