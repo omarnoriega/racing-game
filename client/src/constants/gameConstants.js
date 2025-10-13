@@ -9,7 +9,7 @@ export const GAME_CONFIG = {
 export const DEFAULT_GAME_CONFIG = {
   TRACK_LENGTH: 1000,
   TAP_POWER: 1,
-  TAP_COOLDOWN_MS: 100,
+  TAP_COOLDOWN_MS: 200,
   MIN_PLAYERS_TO_START: 1,
   GAME_DURATION_MS: null,
 };
@@ -61,4 +61,10 @@ export const GAME_STATUS = {
   WAITING: 'waiting',
   ACTIVE: 'active',
   FINISHED: 'finished',
+};
+
+export const MOTION_CONFIG = {
+  SHAKE_THRESHOLD: 15, // Ajustar según necesidad
+  SHAKE_COOLDOWN: 200, // ms entre sacudidas
+  VIBRATION_DURATION: 50, // ms de vibración
 };

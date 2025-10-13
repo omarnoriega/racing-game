@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGameState } from '../hooks/useGameState';
-import { useTouchHandler } from '../hooks/useTouchHandler';
+import { useMotionDetection } from '../hooks/useMotionDetection';
 import { TEAM_COLORS, GAME_CONFIG } from '../constants/gameConstants';
+import MotionPermission from '../components/game/MotionPermission';
+import MotionIndicator from '../components/game/MotionIndicator';
+import GameTimer from '../components/game/GameTimer';
+import GameStats from '../components/game/GameStats';
 import ShareGameModal from '../components/game/ShareGameModal';
 import { formatGameId } from '../utils/helpers';
 import '../styles/game.css';
-import GameTimer from '../components/game/GameTimer';
-import GameStats from '../components/game/GameStats';
 import { socketService } from '../services/socketService';
-import { addRecentGame } from '../utils/localStorage';
 
 
 function Game() {
@@ -17,35 +18,55 @@ function Game() {
   const [playerId] = useState(`player-${Date.now()}`);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [motionEnabled, setMotionEnabled] = useState(false);
   const [gameConfig, setGameConfig] = useState(null);
   
-
   const { gameState, isConnected, sendTap } = useGameState(
     gameId, 
     playerId, 
     selectedTeam
   );
 
+  // Handler para sacudidas
+  const handleShake = useCallback((magnitude) => {
+    if (gameState?.status === 'active') {
+      sendTap();
+      console.log('🎯 Shake registered, magnitude:', magnitude.toFixed(2));
+    }
+  }, [gameState, sendTap]);
+
+  // Hook de detección de movimiento
+  const {
+    isSupported,
+    permissionGranted,
+    requestPermission,
+    intensity,
+    shakeCount,
+  } = useMotionDetection(handleShake, motionEnabled && gameState?.status === 'active');
+
+  // Handler de permiso
+  const handlePermissionGranted = useCallback((granted) => {
+    setMotionEnabled(granted);
+    if (!granted) {
+      alert('Sin acceso a los sensores de movimiento. Verifica los permisos del navegador.');
+    }
+  }, []);
+
+  // Obtener configuración del juego
   useEffect(() => {
     const socket = socketService.connect();
     
-    // Obtener configuración del juego
+    
     socket.emit('game:getConfig', { gameId });
     
     socket.on('game:config', ({ config }) => {
       setGameConfig(config);
     });
 
-     if (gameId) {
-    addRecentGame(gameId);
-    };
-
     return () => {
       socket.off('game:config');
     };
   }, [gameId]);
-
-  const { handleTouch } = useTouchHandler(sendTap);
 
   if (!selectedTeam) {
     return (
@@ -77,13 +98,35 @@ function Game() {
           </button>
         </div>
 
-      {showShareModal && (
+        {showShareModal && (
           <ShareGameModal
             gameId={gameId}
             onClose={() => setShowShareModal(false)}
           />
         )}
+      </div>
+    );
+  }
 
+  // Mostrar modal de permiso si no está habilitado
+  if (!motionEnabled && isSupported) {
+    return (
+      <MotionPermission 
+        onPermissionGranted={handlePermissionGranted}
+      />
+    );
+  }
+
+  // Mensaje si no es soportado
+  if (!isSupported) {
+    return (
+      <div className="not-supported-message">
+        <h2>❌ Sensores no disponibles</h2>
+        <p>Tu dispositivo no soporta sensores de movimiento o estás usando un navegador de escritorio.</p>
+        <p>Por favor, abre esta app en un dispositivo móvil con Chrome o Safari.</p>
+        <button onClick={() => window.location.href = '/'}>
+          Volver al inicio
+        </button>
       </div>
     );
   }
@@ -97,8 +140,8 @@ function Game() {
     ? gameState.teams.teamB 
     : gameState.teams.teamA;
 
-  const myProgress = (myTeam.position / GAME_CONFIG.TRACK_LENGTH) * 100;
-  const opponentProgress = (opponentTeam.position / GAME_CONFIG.TRACK_LENGTH) * 100;
+  const myProgress = (myTeam.position / gameConfig.TRACK_LENGTH) * 100;
+  const opponentProgress = (opponentTeam.position / gameConfig.TRACK_LENGTH) * 100;
 
   return (
     <div className="game-screen">
@@ -113,11 +156,12 @@ function Game() {
             📤
           </button>
         </div>
-        <h3>Partida: {gameId}</h3>
+
         <div className="game-config-display">
           <span>🏁 {gameConfig.TRACK_LENGTH}m</span>
-          <span>⚡ {gameConfig.TAP_POWER}m/tap</span>
+          <span>⚡ {gameConfig.TAP_POWER}m/shake</span>
         </div>
+        
         <div className={`status ${gameState.status}`}>
           {gameState.status === 'waiting' && '⏸️ Esperando inicio...'}
           {gameState.status === 'active' && '🏁 ¡CARRERA!'}
@@ -125,20 +169,28 @@ function Game() {
         </div>
       </div>
 
-          {/* Timer si hay duración configurada */}
-          {gameState.status === 'active' && gameConfig.GAME_DURATION_MS && (
-            <GameTimer 
-              startTime={gameState.startTime}
-              duration={gameConfig.GAME_DURATION_MS}
-            />
-          )}
+      {gameState.status === 'active' && gameConfig.GAME_DURATION_MS && (
+        <GameTimer 
+          startTime={gameState.startTime}
+          duration={gameConfig.GAME_DURATION_MS}
+        />
+      )}
+
+      {/* Indicador de movimiento */}
+      {gameState.status === 'active' && (
+        <MotionIndicator
+          intensity={intensity}
+          shakeCount={shakeCount}
+          isActive={true}
+        />
+      )}
 
       <div className="race-tracks">
         {/* Tu equipo */}
         <div className="track">
           <div className="track-header" style={{ color: myTeam.color }}>
             <span>{myTeam.name} (TÚ)</span>
-            <span>{myTeam.totalTaps} taps</span>
+            <span>{myTeam.totalTaps} sacudidas</span>
           </div>
           <div className="track-line">
             <div 
@@ -148,7 +200,7 @@ function Game() {
                 backgroundColor: TEAM_COLORS[selectedTeam]
               }}
             >
-              🏎️
+              🛩️
             </div>
           </div>
         </div>
@@ -157,7 +209,7 @@ function Game() {
         <div className="track">
           <div className="track-header" style={{ color: opponentTeam.color }}>
             <span>{opponentTeam.name}</span>
-            <span>{opponentTeam.totalTaps} taps</span>
+            <span>{opponentTeam.totalTaps} sacudidas</span>
           </div>
           <div className="track-line">
             <div 
@@ -167,29 +219,24 @@ function Game() {
                 backgroundColor: TEAM_COLORS[selectedTeam === 'teamA' ? 'teamB' : 'teamA']
               }}
             >
-              🏎️
+              ✈️
             </div>
           </div>
         </div>
       </div>
 
-      {gameState.status === 'active' && (
-        <div 
-          className="tap-area"
-          onTouchStart={handleTouch}
-          onClick={handleTouch}
-        >
-          <h1>¡TAP AQUÍ!</h1>
-          <p>Impulsa a tu equipo</p>
-          <p>+{gameConfig.TAP_POWER}m por tap</p>
+      {gameState.status === 'waiting' && (
+        <div className="waiting-message">
+          <h3>⏳ Esperando que el administrador inicie la partida...</h3>
+          <p>Prepara tu móvil para sacudirlo</p>
         </div>
       )}
 
       {gameState.status === 'finished' && (
-      <GameStats gameState={gameState} myTeam={selectedTeam} />
+        <GameStats gameState={gameState} myTeam={selectedTeam} />
       )}
 
-       {showShareModal && (
+      {showShareModal && (
         <ShareGameModal
           gameId={gameId}
           onClose={() => setShowShareModal(false)}
