@@ -29,7 +29,7 @@ class SocketService {
       withCredentials: true, // Importante para CORS
     });  
 
-         this.socket.on('connect_error', (error) => {
+      this.socket.on('connect_error', (error) => {
       console.error('❌ Socket connection error:', error.message);
       console.error('🔍 Details:', {
         url: wsUrl,
