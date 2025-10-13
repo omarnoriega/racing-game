@@ -7,8 +7,6 @@ const DEFAULT_GAME_CONFIG = {
   GAME_DURATION_MS: null,       // null = sin límite de tiempo
 };
 
-module.exports = { DEFAULT_GAME_CONFIG};
-
 // Presets de configuración
 const GAME_PRESETS = {
   QUICK: {
@@ -42,14 +40,10 @@ const GAME_PRESETS = {
   },
 };
 
-moodule.exports = {GAME_PRESETS};
-
 const TEAM_COLORS = {
   teamA: '#FF6B6B',
   teamB: '#4ECDC4',
 };
-
-module.exports = {TEAM_COLORS};
 
 const GAME_STATUS = {
   WAITING: 'waiting',
@@ -57,4 +51,9 @@ const GAME_STATUS = {
   FINISHED: 'finished',
 };
 
-module.exports = {GAME_STATUS};
+module.exports = {
+  DEFAULT_GAME_CONFIG,
+  GAME_PRESETS,
+  TEAM_COLORS,
+  GAME_STATUS,
+}; 

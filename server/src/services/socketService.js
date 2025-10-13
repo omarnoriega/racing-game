@@ -1,6 +1,3 @@
-//const { DEFAULT_GAME_CONFIG } = require('../../../shared/constants');
-//const { generateShortId, isValidGameId } = require('../../../shared/utils');
-
 const { DEFAULT_GAME_CONFIG } = require('../../shared/constants');
 const { generateShortId, isValidGameId } = require('../../shared/utils');
 
