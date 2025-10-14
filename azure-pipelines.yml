@@ -73,8 +73,8 @@ stages:
               repository: $(backendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
       - job: BuildFrontend
         displayName: 'Build Frontend'
@@ -108,8 +108,8 @@ stages:
               repository: $(frontendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
   - stage: DeployDev
     displayName: 'Deploy to Development'
