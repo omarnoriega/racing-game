@@ -34,21 +34,21 @@ stages:
             displayName: 'Build Backend Image'
             inputs:
               command: build
-              repository: $(backendImageName)
+              repository: racing-game-backend
               dockerfile: 'server/Dockerfile'
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
+                $(Build.BuildId)
                 latest
 
           - task: Docker@2
             displayName: 'Push Backend Image'
             inputs:
               command: push
-              repository: $(backendImageName)
+              repository: racing-game-backend
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
+                $(Build.BuildId)
                 latest
 
       - job: BuildTap
