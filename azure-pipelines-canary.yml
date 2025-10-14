@@ -151,7 +151,7 @@ stages:
                         --name $(appName) \
                         --resource-group $(resourceGroup) \
                         --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-latest \                        
-                        --revision-suffix tap-canary-latest
+
                 - task: AzureCLI@2
                   displayName: 'Get Current Stable Revision'
                   inputs:
