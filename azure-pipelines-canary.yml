@@ -225,6 +225,7 @@ stages:
 
 resources:
   repositories:
-    - repository: self
+    - repository: racing-game
       type: git
       ref: refs/heads/feature/tap
+      name : racing-game/client
