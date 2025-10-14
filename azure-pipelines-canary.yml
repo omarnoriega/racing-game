@@ -139,7 +139,19 @@ stages:
                           NODE_ENV=development \
                           PORT=3001 \
                           JWT_SECRET=$(JWT_SECRET) \
-                          CORS_ORIGIN=$(CORS_ORIGIN_DEV)
+                          CORS_ORIGIN=$(CORS_ORIGIN_DEV)                     
+                - task: AzureCLI@2
+                  displayName: 'Deploy Frontend to Container App'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az containerapp update \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-latest \                        
+                        --revision-suffix tap-canary-latest
                 - task: AzureCLI@2
                   displayName: 'Get Current Stable Revision'
                   inputs:
@@ -151,9 +163,9 @@ stages:
                         --name $(appName) \
                         --resource-group $(resourceGroup) \
                         --query "[?contains(name, 'tap')].name | [0]" \
-                        --output tsv)
-                      
-                      echo "##vso[task.setvariable variable=stableRevision]$STABLE_REV"                          
+                        --output tsv)          
+                      echo "##vso[task.setvariable variable=stableRevision]$STABLE_REV"     
+
                 - task: AzureCLI@2
                   displayName: 'Deploy MOTION as Canary'
                   inputs:
