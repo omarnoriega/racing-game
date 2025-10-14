@@ -56,7 +56,7 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - checkout: racing-game
+          - checkout: self
             clean: true
           - task: Docker@2
             displayName: 'Build TAP Image'
@@ -189,43 +189,8 @@ stages:
                       
                       echo "✅ Canary deployed with 20% traffic"
 
-#  - stage: PromoteOrRollback
-#    displayName: 'Promote or Rollback'
-#    dependsOn: DeployCanary
-#    condition: succeeded()
-#    jobs:
-#      - deployment: Decision
-#        displayName: 'Manual Approval for Promotion'
-#        environment: 'Production-Promote'
-#        pool:
-###          vmImage: 'ubuntu-latest'
-#        strategy:
-#          runOnce:
-#            deploy:
-#              steps:
-#                - task: AzureCLI@2
-#                  displayName: 'Promote Canary to 100%'
-#                  inputs:
-#                    azureSubscription: '$(azureSubscription)'
-#                    scriptType: 'bash'
-#                    scriptLocation: 'inlineScript'
-#                    inlineScript: |
-#                      CANARY_REV=$(az containerapp revision list \
-#                        --name $(appName) \
-#                        --resource-group $(resourceGroup) \
-#                        --query "[?contains(name, 'motion')].name | [0]" \
-#                        --output tsv)
-#                      
-####                      az containerapp ingress traffic set \
-#                        --name $(appName) \
-#                        --resource-group $(resourceGroup) \
-#                        --revision-weight $CANARY_REV=100
-#                      
-#                      echo "🎉 Canary promoted to production (100%)"
-
 resources:
   repositories:
-    - repository: racing-game
+    - repository: self
       type: git
       ref: refs/heads/feature/tap
-      name : racing-game
