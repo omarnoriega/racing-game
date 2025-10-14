@@ -12,7 +12,7 @@ docker build \
   -f client/Dockerfile.tap \
   --build-arg REACT_APP_API_URL="https://$BACKEND_URL" \
   --build-arg REACT_APP_WS_URL="https://$BACKEND_URL" \
-  -t $ACR_NAME.azurecr.io/racing-game-frontend:tap-latest \
+  -t $ACR_NAME.azurecr.io/racing-game-frontend:tap-canary-latest \
   -t $ACR_NAME.azurecr.io/racing-game-frontend:tap-$(date +%Y%m%d-%H%M%S) \
   ./client
 
@@ -28,7 +28,7 @@ docker build \
 echo "📤 Pushing to ACR..."
 az acr login --name $ACR_NAME
 
-docker push $ACR_NAME.azurecr.io/racing-game-frontend:tap-latest
+docker push $ACR_NAME.azurecr.io/racing-game-frontend:tap-canary-latest
 docker push $ACR_NAME.azurecr.io/racing-game-frontend:motion-latest
 
 echo "✅ Both versions built and pushed successfully!"

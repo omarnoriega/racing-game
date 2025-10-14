@@ -35,8 +35,8 @@ stages:
                 --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
                 --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
               tags: |
-                tap-$(Build.BuildId)
-                tap-latest
+                tap-canary-$(Build.BuildId)
+                tap-canary-latest
 
           - task: Docker@2
             displayName: 'Push TAP Image'
@@ -45,8 +45,8 @@ stages:
               repository: racing-game-frontend
               containerRegistry: '$(acrName)'
               tags: |
-                tap-$(Build.BuildId)
-                tap-latest
+                tap-canary-$(Build.BuildId)
+                tap-canary-latest
 
       - job: BuildMotion
         displayName: 'Build MOTION Version'

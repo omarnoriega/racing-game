@@ -7,8 +7,7 @@ set -e
 # Configuración
 RESOURCE_GROUP="racing-game-rg"
 APP_NAME="racing-game-frontend"
-ACR_NAME="racinggamecr"  # TODO: Tu ACR name
-
+ACR_NAME="racinggamecr"  
 # Percentages (deben sumar 100)
 STABLE_TRAFFIC=80  # % para versión TAP (stable)
 CANARY_TRAFFIC=20  # % para versión MOTION (canary)
