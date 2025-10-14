@@ -141,7 +141,7 @@ stages:
                           JWT_SECRET=$(JWT_SECRET) \
                           CORS_ORIGIN=$(CORS_ORIGIN_DEV)                     
                 - task: AzureCLI@2
-                  displayName: 'Deploy Frontend to Container App'
+                  displayName: 'Deploy Version TAP'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
                     scriptType: 'bash'
@@ -150,7 +150,8 @@ stages:
                       az containerapp update \
                         --name $(appName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-latest \                        
+                        --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-latest) \
+                        --revision-suffix tap-canary-latest
 
                 - task: AzureCLI@2
                   displayName: 'Get Current Stable Revision'
