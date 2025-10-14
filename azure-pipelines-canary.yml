@@ -19,11 +19,45 @@ stages:
   - stage: BuildVersions
     displayName: 'Build Both Versions'
     jobs:
+      - job: BuildBackend
+        displayName: 'Build Backend'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: 'Login to ACR'
+            inputs:
+              command: login
+              containerRegistry: '$(acrName)'
+
+          - task: Docker@2
+            displayName: 'Build Backend Image'
+            inputs:
+              command: build
+              repository: $(backendImageName)
+              dockerfile: 'server/Dockerfile'
+              containerRegistry: '$(acrName)'
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Backend Image'
+            inputs:
+              command: push
+              repository: $(backendImageName)
+              containerRegistry: '$(acrName)'
+              tags: |
+                $(imageTag)
+                latest
+
       - job: BuildTap
         displayName: 'Build TAP Version'
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - checkout: self
+            clean: true
           - task: Docker@2
             displayName: 'Build TAP Image'
             inputs:
@@ -37,7 +71,6 @@ stages:
               tags: |
                 tap-canary-$(Build.BuildId)
                 tap-canary-latest
-
           - task: Docker@2
             displayName: 'Push TAP Image'
             inputs:
@@ -92,6 +125,22 @@ stages:
             deploy:
               steps:
                 - task: AzureCLI@2
+                  displayName: 'Deploy Backend to Container App'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az containerapp update \
+                        --name $(backendAppName) \
+                        --resource-group $(resourceGroup) \
+                        --image $(acrLoginServer)/$(backendImageName):tap-canary-latest \
+                        --set-env-vars \
+                          NODE_ENV=development \
+                          PORT=3001 \
+                          JWT_SECRET=$(JWT_SECRET) \
+                          CORS_ORIGIN=$(CORS_ORIGIN_DEV)
+                - task: AzureCLI@2
                   displayName: 'Get Current Stable Revision'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
@@ -104,8 +153,7 @@ stages:
                         --query "[?contains(name, 'tap')].name | [0]" \
                         --output tsv)
                       
-                      echo "##vso[task.setvariable variable=stableRevision]$STABLE_REV"
-
+                      echo "##vso[task.setvariable variable=stableRevision]$STABLE_REV"                          
                 - task: AzureCLI@2
                   displayName: 'Deploy MOTION as Canary'
                   inputs:
@@ -141,36 +189,42 @@ stages:
                       
                       echo "✅ Canary deployed with 20% traffic"
 
-  - stage: PromoteOrRollback
-    displayName: 'Promote or Rollback'
-    dependsOn: DeployCanary
-    condition: succeeded()
-    jobs:
-      - deployment: Decision
-        displayName: 'Manual Approval for Promotion'
-        environment: 'Production-Promote'
-        pool:
-          vmImage: 'ubuntu-latest'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: AzureCLI@2
-                  displayName: 'Promote Canary to 100%'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      CANARY_REV=$(az containerapp revision list \
-                        --name $(appName) \
-                        --resource-group $(resourceGroup) \
-                        --query "[?contains(name, 'motion')].name | [0]" \
-                        --output tsv)
-                      
-                      az containerapp ingress traffic set \
-                        --name $(appName) \
-                        --resource-group $(resourceGroup) \
-                        --revision-weight $CANARY_REV=100
-                      
-                      echo "🎉 Canary promoted to production (100%)"
+#  - stage: PromoteOrRollback
+#    displayName: 'Promote or Rollback'
+#    dependsOn: DeployCanary
+#    condition: succeeded()
+#    jobs:
+#      - deployment: Decision
+#        displayName: 'Manual Approval for Promotion'
+#        environment: 'Production-Promote'
+#        pool:
+###          vmImage: 'ubuntu-latest'
+#        strategy:
+#          runOnce:
+#            deploy:
+#              steps:
+#                - task: AzureCLI@2
+#                  displayName: 'Promote Canary to 100%'
+#                  inputs:
+#                    azureSubscription: '$(azureSubscription)'
+#                    scriptType: 'bash'
+#                    scriptLocation: 'inlineScript'
+#                    inlineScript: |
+#                      CANARY_REV=$(az containerapp revision list \
+#                        --name $(appName) \
+#                        --resource-group $(resourceGroup) \
+#                        --query "[?contains(name, 'motion')].name | [0]" \
+#                        --output tsv)
+#                      
+####                      az containerapp ingress traffic set \
+#                        --name $(appName) \
+#                        --resource-group $(resourceGroup) \
+#                        --revision-weight $CANARY_REV=100
+#                      
+#                      echo "🎉 Canary promoted to production (100%)"
+
+resources:
+  repositories:
+    - repository: self
+      type: git
+      ref: refs/heads/feature/tap

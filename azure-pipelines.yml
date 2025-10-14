@@ -7,8 +7,6 @@ pr:
     include:
       - main
       - develop
-      - feauture/*
-      - release/*
 
 variables:
   # Azure Container Registry
@@ -65,8 +63,8 @@ stages:
               dockerfile: 'server/Dockerfile'
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Backend Image'
@@ -75,8 +73,8 @@ stages:
               repository: $(backendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
       - job: BuildFrontend
         displayName: 'Build Frontend'
@@ -100,8 +98,8 @@ stages:
                 --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
                 --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Frontend Image'
@@ -110,13 +108,13 @@ stages:
               repository: $(frontendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
   - stage: DeployDev
     displayName: 'Deploy to Development'
     dependsOn: Build
-    #condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop', 'refs/heads/feature/shaken' ))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
     jobs:
       - deployment: DeployToDev
         displayName: 'Deploy to Dev Environment'
@@ -137,7 +135,7 @@ stages:
                       az containerapp update \
                         --name $(backendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):$(imageTag) \
+                        --image $(acrLoginServer)/$(backendImageName):tap-latest \
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
@@ -154,4 +152,4 @@ stages:
                       az containerapp update \
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):$(imageTag)
+                        --image $(acrLoginServer)/$(frontendImageName):tap-latest
