@@ -63,8 +63,8 @@ stages:
               dockerfile: 'server/Dockerfile'
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Backend Image'
@@ -98,8 +98,8 @@ stages:
                 --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
                 --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Frontend Image'
