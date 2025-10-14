@@ -1,18 +1,7 @@
 # Azure DevOps Pipeline - Racing Game
 # CI/CD para Azure Container Apps
 
-trigger:
-  branches:
-    include:
-      - main
-      - develop
-  paths:
-    include:
-      - client/*
-      - server/*
-      - shared/*
-      - azure-pipelines.yml
-
+trigger: none
 pr:
   branches:
     include:
@@ -22,15 +11,15 @@ pr:
 variables:
   # Azure Container Registry
   - name: acrName
-    value: 'racinggameacr' # TODO: Nombre de tu ACR (ej: racinggameacr)
+    value: 'racinggamecr' 
   - name: acrLoginServer
     value: '$(acrName).azurecr.io'
   
   # Azure Container Apps
   - name: resourceGroup
-    value: 'racing-game-rg' # TODO: Nombre del resource group
+    value: 'racing-game-rg' 
   - name: containerAppEnvironment
-    value: 'racing-game-env' # TODO: Nombre del environment
+    value: 'racing-game-env' 
   - name: backendAppName
     value: 'racing-game-backend'
   - name: frontendAppName
@@ -46,10 +35,10 @@ variables:
   
   # Azure Subscription
   - name: azureSubscription
-    value: 'Azure-Racing-Game' # TODO: Nombre de tu service connection
+    value: 'Azure-Racing-Game' 
 
   # Configuración
-  - group: 'racing-game-config' # Variable group en Azure DevOps
+  - group: 'racing-game-config' 
 
 stages:
   - stage: Build
@@ -74,8 +63,8 @@ stages:
               dockerfile: 'server/Dockerfile'
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Backend Image'
@@ -84,8 +73,8 @@ stages:
               repository: $(backendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
       - job: BuildFrontend
         displayName: 'Build Frontend'
@@ -109,8 +98,8 @@ stages:
                 --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
                 --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
           - task: Docker@2
             displayName: 'Push Frontend Image'
@@ -119,8 +108,8 @@ stages:
               repository: $(frontendImageName)
               containerRegistry: '$(acrName)'
               tags: |
-                $(imageTag)
-                latest
+                tap-$(imageTag)
+                tap-latest
 
   - stage: DeployDev
     displayName: 'Deploy to Development'
@@ -146,11 +135,10 @@ stages:
                       az containerapp update \
                         --name $(backendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):$(imageTag) \
+                        --image $(acrLoginServer)/$(backendImageName):tap-latest \
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
-                          MONGODB_URI=$(MONGODB_URI_DEV) \
                           JWT_SECRET=$(JWT_SECRET) \
                           CORS_ORIGIN=$(CORS_ORIGIN_DEV)
 
@@ -164,66 +152,4 @@ stages:
                       az containerapp update \
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):$(imageTag)
-
-  - stage: DeployProd
-    displayName: 'Deploy to Production'
-    dependsOn: Build
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    jobs:
-      - deployment: DeployToProd
-        displayName: 'Deploy to Production'
-        environment: 'Production'
-        pool:
-          vmImage: 'ubuntu-latest'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: AzureCLI@2
-                  displayName: 'Deploy Backend to Container App'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      az containerapp update \
-                        --name $(backendAppName) \
-                        --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):$(imageTag) \
-                        --set-env-vars \
-                          NODE_ENV=production \
-                          PORT=3001 \
-                          MONGODB_URI=$(MONGODB_URI_PROD) \
-                          JWT_SECRET=$(JWT_SECRET) \
-                          CORS_ORIGIN=$(CORS_ORIGIN_PROD)
-
-                - task: AzureCLI@2
-                  displayName: 'Deploy Frontend to Container App'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      az containerapp update \
-                        --name $(frontendAppName) \
-                        --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):$(imageTag)
-
-                - task: AzureCLI@2
-                  displayName: 'Verify Deployment'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      echo "Checking backend health..."
-                      BACKEND_URL=$(az containerapp show \
-                        --name $(backendAppName) \
-                        --resource-group $(resourceGroup) \
-                        --query properties.configuration.ingress.fqdn \
-                        -o tsv)
-                      
-                      curl -f https://$BACKEND_URL/health || exit 1
-                      
-                      echo "Backend deployed successfully!"
+                        --image $(acrLoginServer)/$(frontendImageName):tap-latest

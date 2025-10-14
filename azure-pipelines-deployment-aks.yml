@@ -1,0 +1,102 @@
+# Azure DevOps Pipeline para AKS
+trigger: none
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  # ACR y AKS
+  - name: acrName
+    value: 'racinggamecr'  
+  - name: acrLoginServer
+    value: '$(acrName).azurecr.io'
+  - name: aksName
+    value: 'racing-game-aks'
+  - name: resourceGroup
+    value: 'racing-game-rg'
+  
+  # Docker Images
+  - name: backendImage
+    value: 'racing-game-backend'
+  - name: frontendImage
+    value: 'racing-game-frontend'
+  - name: imageTag
+    value: 'latest'
+  
+  # Service Connection
+  - name: azureSubscription
+    value: '556b812f-3bdd-4e65-bdbc-c982a185ce9b'  
+  - name: k8sServiceConnection
+    value: 'racing-game-aks'  
+  
+  # Variable Group
+  - group: 'racing-game-config-aks'
+
+stages:
+  - stage: DeployDev
+    displayName: 'Deploy to Development'
+    jobs:
+      - deployment: DeployToDev
+        displayName: 'Deploy to Dev'
+        environment: 'Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: 'manifests'
+                    path: '$(Pipeline.Workspace)/manifests'
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply configmap'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'default'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/configmap.yaml'
+
+                - task: KubernetesManifest@0
+                  displayName: 'Deploy Backend'
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: '$(k8sServiceConnection)'
+                    namespace: 'default'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/backend-deployment.yaml
+                    containers: |
+                      $(acrLoginServer)/$(backendImage):$(imageTag)
+
+                - task: KubernetesManifest@0
+                  displayName: 'Deploy Frontend'
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: '$(k8sServiceConnection)'
+                    namespace: 'default'
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/frontend-deployment.yaml
+                    containers: |
+                      $(acrLoginServer)/$(frontendImage):$(imageTag)
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply ingress'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'default'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/ingress.yaml'
+
+                - task: Kubernetes@1
+                  displayName: 'kubectl apply hpa'
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: '$(k8sServiceConnection)'
+                    namespace: 'default'
+                    command: 'apply'
+                    arguments: '-f $(Pipeline.Workspace)/manifests/hpa.yaml'

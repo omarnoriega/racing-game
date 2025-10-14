@@ -103,7 +103,9 @@ const handlePaste = (e) => {
       <div className="home-header">
         <h1>🏁 Racing Game</h1>
         <p className="subtitle">Compite en carreras multijugador</p>
+        🚀 From Tuta with love
       </div>
+      
       
       <div className="home-actions">
         <button 
@@ -176,7 +178,7 @@ const handlePaste = (e) => {
           <span className="btn-icon">🎛️</span>
           <span>Panel de Administración</span>
         </button>
-      </div>
+       </div>
 
       {showConfigModal && (
         <GameConfigModal

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: racing-game-config
+  namespace: default
+data:
+  # Backend config
+  NODE_ENV: "development"
+  PORT: "3001"
+  
+  # Frontend config (URLs se actualizan después del despliegue)
+  REACT_APP_API_URL: "racing-game-demo.westus2.cloudapp.azure.com"  
+  REACT_APP_WS_URL: "racing-game-demo.westus2.cloudapp.azure.com"   

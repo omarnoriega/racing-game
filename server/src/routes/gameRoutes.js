@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getGameState, getAllGames } = require('../services/socketService');
-const { GAME_PRESETS } = require('../../../shared/constants');
+//const { GAME_PRESETS } = require('../../../shared/constants');
+const { GAME_PRESETS } = require('../../shared/constants');
+
 
 // Obtener presets disponibles
 router.get('/presets', (req, res) => {

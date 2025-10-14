@@ -1,5 +1,5 @@
 // Configuraciones por defecto del juego
-export const DEFAULT_GAME_CONFIG = {
+const DEFAULT_GAME_CONFIG = {
   TRACK_LENGTH: 1000,           // Metros del circuito
   TAP_POWER: 1,                 // Metros por tap
   TAP_COOLDOWN_MS: 100,         // Milisegundos entre taps
@@ -8,7 +8,7 @@ export const DEFAULT_GAME_CONFIG = {
 };
 
 // Presets de configuración
-export const GAME_PRESETS = {
+const GAME_PRESETS = {
   QUICK: {
     name: 'Carrera Rápida',
     TRACK_LENGTH: 500,
@@ -40,13 +40,20 @@ export const GAME_PRESETS = {
   },
 };
 
-export const TEAM_COLORS = {
+const TEAM_COLORS = {
   teamA: '#FF6B6B',
   teamB: '#4ECDC4',
 };
 
-export const GAME_STATUS = {
+const GAME_STATUS = {
   WAITING: 'waiting',
   ACTIVE: 'active',
   FINISHED: 'finished',
 };
+
+module.exports = {
+  DEFAULT_GAME_CONFIG,
+  GAME_PRESETS,
+  TEAM_COLORS,
+  GAME_STATUS,
+}; 

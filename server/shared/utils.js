@@ -1,5 +1,5 @@
 // Generar ID corto de 6 caracteres (alfanumérico)
-export function generateShortId() {
+function generateShortId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin caracteres confusos (I, O, 0, 1)
   let id = '';
   for (let i = 0; i < 6; i++) {
@@ -9,12 +9,18 @@ export function generateShortId() {
 }
 
 // Validar formato de ID
-export function isValidGameId(id) {
+function isValidGameId(id) {
   return /^[A-Z0-9]{6}$/.test(id);
 }
 
 // Formatear ID para mostrar (ej: ABC-123)
-export function formatGameId(id) {
+function formatGameId(id) {
   if (!id || id.length !== 6) return id;
   return `${id.slice(0, 3)}-${id.slice(3)}`;
 }
+
+module.exports = {
+  generateShortId,
+  isValidGameId,
+  formatGameId,
+};
