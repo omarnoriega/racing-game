@@ -249,9 +249,8 @@ stages:
                       az containerapp update \
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag)
+                        --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag) \
                         --revision-suffix tap-$(imageTag)
-
 
                 - task: AzureCLI@2
                   displayName: 'Configure Traffic 100%'
