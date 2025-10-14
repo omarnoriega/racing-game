@@ -22,8 +22,11 @@ function Game() {
   const [gameConfig, setGameConfig] = useState(null);
   
   // Estados para el modo de input
-  const [inputMode, setInputMode] = useState(null); // null, 'tap', 'motion', 'both'
+  const [inputMode, setInputMode] = useState(null);
   const [motionEnabled, setMotionEnabled] = useState(false);
+  
+  // Debug: contador local de taps
+  const [localTapCount, setLocalTapCount] = useState(0);
   
   const { gameState, isConnected, sendTap } = useGameState(
     gameId, 
@@ -31,54 +34,42 @@ function Game() {
     selectedTeam
   );
 
-  // Handler para sacudidas (MOTION)
-  const handleShake = useCallback((magnitude) => {
-    if (gameState?.status === 'active') {
-      sendTap();
-      console.log('🎯 Shake registered, magnitude:', magnitude.toFixed(2));
+  // Handler universal para cualquier input
+  const handleInput = useCallback(() => {
+    if (gameState?.status !== 'active') {
+      console.log('⚠️ Game not active, ignoring input');
+      return;
     }
+
+    console.log('🎯 Input detected, sending to server...');
+    setLocalTapCount(prev => prev + 1);
+    sendTap();
   }, [gameState, sendTap]);
 
-  // Handler para taps (TAP)
-  const handleTap = useCallback(() => {
-    if (gameState?.status === 'active') {
-      sendTap();
-      console.log('👆 Tap registered');
-    }
-  }, [gameState, sendTap]);
-
-  // Hook de detección de movimiento (solo si mode es 'motion' o 'both')
+  // Hook de detección de movimiento
   const {
     isSupported,
     permissionGranted,
-    requestPermission,
     intensity,
     shakeCount,
   } = useMotionDetection(
-    handleShake, 
+    handleInput, 
     motionEnabled && 
     (inputMode === 'motion' || inputMode === 'both') && 
     gameState?.status === 'active'
   );
 
-  // Hook para tap (solo si mode es 'tap' o 'both')
+  // Hook para tap - SIEMPRE habilitado para tap y both
   const { handleTouch } = useTouchHandler(
-    handleTap,
-    200 // cooldown
+    handleInput,
+    100 // cooldown
   );
 
   // Handler cuando se selecciona el modo
   const handleModeSelected = useCallback((mode) => {
     console.log('🎮 Input mode selected:', mode);
     setInputMode(mode);
-    
-    // Si selecciona motion o both, necesita habilitar sensores
-    if (mode === 'motion' || mode === 'both') {
-      // Se mostrará el MotionPermission
-    } else if (mode === 'tap') {
-      // No necesita permisos especiales
-      setMotionEnabled(false);
-    }
+    setLocalTapCount(0);
   }, []);
 
   // Handler de permiso de motion
@@ -98,12 +89,28 @@ function Game() {
     
     socket.on('game:config', ({ config }) => {
       setGameConfig(config);
+      console.log('⚙️ Game config received:', config);
     });
 
     return () => {
       socket.off('game:config');
     };
   }, [gameId]);
+
+  // Debug: Log de conexión
+  useEffect(() => {
+    console.log('🔌 Connection status:', isConnected ? 'Connected' : 'Disconnected');
+  }, [isConnected]);
+
+  // Debug: Log de game state
+  useEffect(() => {
+    if (gameState) {
+      console.log('🎮 Game state updated:', {
+        status: gameState.status,
+        myTeam: selectedTeam ? gameState.teams[selectedTeam]?.totalTaps : 'N/A'
+      });
+    }
+  }, [gameState, selectedTeam]);
 
   // ========================================
   // RENDER: Selección de Equipo
@@ -155,7 +162,7 @@ function Game() {
     return (
       <InputModeSelector 
         onSelect={handleModeSelected}
-        autoDetect={true} // Auto-detecta según REACT_APP_INPUT_MODE
+        autoDetect={true}
       />
     );
   }
@@ -172,28 +179,17 @@ function Game() {
   }
 
   // ========================================
-  // RENDER: Mensaje si motion no soportado
-  // ========================================
-  if (inputMode === 'motion' && !isSupported) {
-    return (
-      <div className="not-supported-message">
-        <h2>❌ Sensores no disponibles</h2>
-        <p>Tu dispositivo no soporta sensores de movimiento.</p>
-        <button onClick={() => setInputMode('tap')}>
-          Cambiar a modo TAP
-        </button>
-        <button onClick={() => window.location.href = '/'}>
-          Volver al inicio
-        </button>
-      </div>
-    );
-  }
-
-  // ========================================
   // RENDER: Loading
   // ========================================
   if (!gameState || !gameConfig) {
-    return <div className="loading">Cargando juego...</div>;
+    return (
+      <div className="loading">
+        <p>Cargando juego...</p>
+        <p className="debug-info">
+          Conexión: {isConnected ? '✅ Conectado' : '❌ Desconectado'}
+        </p>
+      </div>
+    );
   }
 
   // ========================================
@@ -207,7 +203,6 @@ function Game() {
   const myProgress = (myTeam.position / gameConfig.TRACK_LENGTH) * 100;
   const opponentProgress = (opponentTeam.position / gameConfig.TRACK_LENGTH) * 100;
 
-  // Determinar label según modo
   const getActionLabel = () => {
     if (inputMode === 'tap') return 'taps';
     if (inputMode === 'motion') return 'sacudidas';
@@ -216,6 +211,16 @@ function Game() {
 
   return (
     <div className="game-screen">
+      {/* Debug info */}
+      <div className="debug-panel">
+        <small>
+          🔌 {isConnected ? 'Conectado' : 'Desconectado'} | 
+          🎮 Modo: {inputMode} | 
+          👆 Local: {localTapCount} | 
+          📊 Server: {myTeam.totalTaps}
+        </small>
+      </div>
+
       <div className="game-header">
         <div className="game-id-display-mini">
           <span>{formatGameId(gameId)}</span>
@@ -252,7 +257,7 @@ function Game() {
         />
       )}
 
-      {/* Indicador de movimiento (solo si motion está activo) */}
+      {/* Indicador de movimiento */}
       {gameState.status === 'active' && (inputMode === 'motion' || inputMode === 'both') && (
         <MotionIndicator
           intensity={intensity}
@@ -262,7 +267,6 @@ function Game() {
       )}
 
       <div className="race-tracks">
-        {/* Tu equipo */}
         <div className="track">
           <div className="track-header" style={{ color: myTeam.color }}>
             <span>{myTeam.name} (TÚ)</span>
@@ -276,12 +280,11 @@ function Game() {
                 backgroundColor: TEAM_COLORS[selectedTeam]
               }}
             >
-              🛩️
+              🏎️
             </div>
           </div>
         </div>
 
-        {/* Equipo oponente */}
         <div className="track">
           <div className="track-header" style={{ color: opponentTeam.color }}>
             <span>{opponentTeam.name}</span>
@@ -295,24 +298,27 @@ function Game() {
                 backgroundColor: TEAM_COLORS[selectedTeam === 'teamA' ? 'teamB' : 'teamA']
               }}
             >
-              ✈️
+              🏎️
             </div>
           </div>
         </div>
       </div>
 
-      {/* Área de TAP (solo si tap está activo) */}
+      {/* Área de TAP - CRÍTICO: Asegurar que esté bien conectado */}
       {gameState.status === 'active' && (inputMode === 'tap' || inputMode === 'both') && (
         <div 
           className="tap-area"
           onTouchStart={handleTouch}
+          onTouchEnd={(e) => e.preventDefault()}
           onClick={handleTouch}
+          onMouseDown={handleTouch}
         >
           <h1>¡TAP AQUÍ!</h1>
           <p>Toca para avanzar</p>
           {inputMode === 'both' && (
             <p className="hint">O sacude tu móvil</p>
           )}
+          <p className="tap-count">Taps: {localTapCount}</p>
         </div>
       )}
 
