@@ -295,7 +295,7 @@ stages:
 # Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
   - stage: PostCleanup
     displayName: 'Post-Deploy Cleanup'
-    dependsOn: Deploy
+    dependsOn: DeployCanary
     condition: succeeded()
     jobs:
       - job: FinalCleanup
