@@ -228,4 +228,4 @@ resources:
     - repository: racing-game
       type: git
       ref: refs/heads/feature/tap
-      name : racing-game/client
+      name : racing-game
