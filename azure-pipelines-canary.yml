@@ -132,9 +132,9 @@ stages:
                     scriptLocation: 'inlineScript'
                     inlineScript: |
                       az containerapp update \
-                        --name $(backendAppName) \
+                        --name racing-game-backend \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):tap-canary-latest \
+                        --image $(acrName).azurecr.io/racing-game-backend:latest \
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
