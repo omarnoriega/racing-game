@@ -4,8 +4,8 @@
 
 set -e
 
-ACR_NAME="racinggamecr"  # TODO: Tu ACR name
-BACKEND_URL="https://racing-game-backend.gentleisland-51245d58.westus2.azurecontainerapps.io"  # TODO: URL del backend
+ACR_NAME="racinggamecr"  
+BACKEND_URL="https://racing-game-backend.gentleisland-51245d58.westus2.azurecontainerapps.io"  
 
 echo "🏗️  Building TAP version..."
 docker build \
