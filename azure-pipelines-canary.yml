@@ -153,7 +153,7 @@ stages:
             inputs:
               command: build
               repository: racing-game-frontend
-              dockerfile: 'client/Dockerfile.tap'
+              dockerfile: 'client/Dockerfile'
               containerRegistry: '$(acrName)'
               arguments: |
                 --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
@@ -240,8 +240,8 @@ stages:
                       az containerapp update \
                         --name $(appName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-latest \
-                        --revision-suffix tap-canary-latest
+                        --image $(acrName).azurecr.io/racing-game-frontend:tap-canary-$(Build.BuildId) \
+                        --revision-suffix tap-canary-$(Build.BuildId)
 
                 - task: AzureCLI@2
                   displayName: 'Get Current Stable Revision'
@@ -291,6 +291,54 @@ stages:
                           $CANARY_REV=20
                       
                       echo "✅ Canary deployed with 20% traffic"
+
+# Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
+  - stage: PostCleanup
+    displayName: 'Post-Deploy Cleanup'
+    dependsOn: Deploy
+    condition: succeeded()
+    jobs:
+      - job: FinalCleanup
+        displayName: 'Remove Zero-Traffic Revisions'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Remove Zero-Traffic Revisions'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "🧹 Removing revisions with 0% traffic..."
+                
+                for APP in $(backendApp) $(frontendApp); do
+                  echo "Processing: $APP"
+                  
+                  # Obtener revisiones con 0% de tráfico
+                  ZERO_TRAFFIC=$(az containerapp revision list \
+                    --name $APP \
+                    --resource-group $(resourceGroup) \
+                    --query "[?properties.trafficWeight==\`0\` && properties.active==\`true\`].name" \
+                    --output tsv)
+                  
+                  if [ -z "$ZERO_TRAFFIC" ]; then
+                    echo "  No zero-traffic revisions found"
+                    continue
+                  fi
+                  
+                  for REV in $ZERO_TRAFFIC; do
+                    echo "  Deactivating: $REV"
+                    az containerapp revision deactivate \
+                      --name $APP \
+                      --resource-group $(resourceGroup) \
+                      --revision $REV \
+                      --output none || true
+                  done
+                done
+                
+                echo "✅ Post-cleanup completed"
+
 
 resources:
   repositories:
