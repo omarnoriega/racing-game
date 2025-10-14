@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const SHAKE_THRESHOLD = 5; // Fuerza mínima para detectar sacudida
+const SHAKE_THRESHOLD = 15; // Fuerza mínima para detectar sacudida
 const SHAKE_COOLDOWN = 200; // Milisegundos entre sacudidas
 const VIBRATION_DURATION = 50; // Duración de la vibración en ms
 
@@ -17,7 +17,7 @@ export function useMotionDetection(onShake, enabled = true) {
 
   // Verificar soporte del navegador
   useEffect(() => {
-    const supported = 'DeviceMotionEvent' in window || 'DeviceOrientationEvent' in window;;
+    const supported = 'DeviceMotionEvent' in window;
     setIsSupported(supported);
     
     console.log('📱 Motion sensors:', supported ? 'supported' : 'not supported');
@@ -56,14 +56,6 @@ export function useMotionDetection(onShake, enabled = true) {
   const calculateMagnitude = useCallback((x, y, z) => {
     return Math.sqrt(x * x + y * y + z * z);
   }, []);
-
-    const handleShake = useCallback((magnitude) => {
-    if (gameState?.status === 'active') {
-      // Enviar con intensidad
-      socketService.sendTapWithIntensity(gameId, selectedTeam, magnitude);
-    }
-  }, [gameState, gameId, selectedTeam]);
-
 
   // Handler del evento de movimiento
   const handleMotion = useCallback((event) => {

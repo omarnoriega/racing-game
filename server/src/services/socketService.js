@@ -110,9 +110,16 @@ function initializeSocketService(socketIo) {
 
       const tapPower = game.config.TAP_POWER || 1;
 
-      // Incrementar taps y posición
+      const powerMultiplier = Math.min(intensity / 15, 2); // Max 2x
+      const actualPower = tapPower * powerMultiplier;
+
+
       game.teams[teamId].totalTaps += 1;
-      game.teams[teamId].position += tapPower;
+      game.teams[teamId].position += Math.round(actualPower);
+
+      // Log para debug
+      console.log(`🎯 Shake from ${teamId}: intensity=${intensity}, power=${actualPower.toFixed(2)}`);
+
 
       // Verificar si hay ganador por distancia
       const trackLength = game.config.TRACK_LENGTH || 1000;

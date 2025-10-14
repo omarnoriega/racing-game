@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGameState } from '../hooks/useGameState';
 import { useMotionDetection } from '../hooks/useMotionDetection';
-import { TEAM_COLORS, GAME_CONFIG } from '../constants/gameConstants';
+import { socketService } from '../services/socketService';
+import { TEAM_COLORS } from '../constants/gameConstants';
 import MotionPermission from '../components/game/MotionPermission';
 import MotionIndicator from '../components/game/MotionIndicator';
 import GameTimer from '../components/game/GameTimer';
@@ -10,7 +11,8 @@ import GameStats from '../components/game/GameStats';
 import ShareGameModal from '../components/game/ShareGameModal';
 import { formatGameId } from '../utils/helpers';
 import '../styles/game.css';
-import { socketService } from '../services/socketService';
+
+
 
 
 function Game() {
