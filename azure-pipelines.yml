@@ -135,7 +135,7 @@ stages:
                       az containerapp update \
                         --name $(backendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):$(imageTag) \
+                        --image $(acrLoginServer)/$(backendImageName):tap-latest \
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
@@ -152,4 +152,4 @@ stages:
                       az containerapp update \
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):$(imageTag)
+                        --image $(acrLoginServer)/$(frontendImageName):tap-latest
