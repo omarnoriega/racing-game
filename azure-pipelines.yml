@@ -276,7 +276,7 @@ stages:
 # Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
   - stage: PostCleanup
     displayName: 'Post-Deploy Cleanup'
-    dependsOn: DeployToDev
+    dependsOn: DeployDev
     condition: succeeded()
     jobs:
       - job: FinalCleanup
