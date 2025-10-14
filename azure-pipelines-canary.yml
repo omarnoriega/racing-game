@@ -15,8 +15,97 @@ variables:
   - name: azureSubscription
     value: 'Azure-Racing-Game'  
   - group: 'racing-game-config'
+  - name: keepRevisions
+    value: 2
+  - name: backendApp
+    value: 'racing-game-backend'
+  - name: frontendApp
+    value: 'racing-game-frontend'
 
 stages:
+  # Stage 1: Limpieza Pre-Deploy
+  - stage: PreCleanup
+    displayName: 'Pre-Deploy Cleanup'
+    jobs:
+        - job: CleanupOldRevisions
+          displayName: 'Cleanup Old Revisions'
+          pool:
+            vmImage: 'ubuntu-latest'
+          steps:
+            - task: AzureCLI@2
+              displayName: 'Cleanup Backend Revisions'
+              inputs:
+                azureSubscription: '$(azureSubscription)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  echo "🧹 Cleaning up old backend revisions..."
+                  
+                  # Obtener revisiones (ordenadas, más reciente primero)
+                  REVISIONS=$(az containerapp revision list \
+                    --name $(backendApp) \
+                    --resource-group $(resourceGroup) \
+                    --query "sort_by([].{name:name, created:properties.createdTime}, &created) | reverse(@) | [].name" \
+                    --output tsv)
+                  
+                  # Contar revisiones
+                  TOTAL=$(echo "$REVISIONS" | wc -l)
+                  echo "Total revisions: $TOTAL"
+                  
+                  # Si hay más revisiones que las que queremos mantener
+                  if [ $TOTAL -gt $(keepRevisions) ]; then
+                    # Obtener revisiones a eliminar (todas excepto las últimas N)
+                    TO_DELETE=$(echo "$REVISIONS" | tail -n +$(($(keepRevisions) + 1)))
+                    
+                    for REV in $TO_DELETE; do
+                      echo "Deactivating: $REV"
+                      az containerapp revision deactivate \
+                        --name $(backendApp) \
+                        --resource-group $(resourceGroup) \
+                        --revision $REV \
+                        --output none || true
+                    done
+                    
+                    echo "✅ Cleanup completed"
+                  else
+                    echo "✅ No cleanup needed"
+                  fi
+
+            - task: AzureCLI@2
+              displayName: 'Cleanup Frontend Revisions'
+              inputs:
+                azureSubscription: '$(azureSubscription)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  echo "🧹 Cleaning up old frontend revisions..."
+                  
+                  REVISIONS=$(az containerapp revision list \
+                    --name $(frontendApp) \
+                    --resource-group $(resourceGroup) \
+                    --query "sort_by([].{name:name, created:properties.createdTime}, &created) | reverse(@) | [].name" \
+                    --output tsv)
+                  
+                  TOTAL=$(echo "$REVISIONS" | wc -l)
+                  echo "Total revisions: $TOTAL"
+                  
+                  if [ $TOTAL -gt $(keepRevisions) ]; then
+                    TO_DELETE=$(echo "$REVISIONS" | tail -n +$(($(keepRevisions) + 1)))
+                    
+                    for REV in $TO_DELETE; do
+                      echo "Deactivating: $REV"
+                      az containerapp revision deactivate \
+                        --name $(frontendApp) \
+                        --resource-group $(resourceGroup) \
+                        --revision $REV \
+                        --output none || true
+                    done
+                    
+                    echo "✅ Cleanup completed"
+                  else
+                    echo "✅ No cleanup needed"
+                  fi
+
   - stage: BuildVersions
     displayName: 'Build Both Versions'
     jobs:
