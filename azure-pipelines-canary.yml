@@ -1,0 +1,176 @@
+trigger: none
+#  branches:
+#    include:
+#      - main
+#      - canary
+
+variables:
+  - name: acrName
+    value: 'racinggamecr'  
+  - name: resourceGroup
+    value: 'racing-game-rg'
+  - name: appName
+    value: 'racing-game-frontend'
+  - name: azureSubscription
+    value: 'Azure-Racing-Game'  
+  - group: 'racing-game-config'
+
+stages:
+  - stage: BuildVersions
+    displayName: 'Build Both Versions'
+    jobs:
+      - job: BuildTap
+        displayName: 'Build TAP Version'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: 'Build TAP Image'
+            inputs:
+              command: build
+              repository: racing-game-frontend
+              dockerfile: 'client/Dockerfile.tap'
+              containerRegistry: '$(acrName)'
+              arguments: |
+                --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
+                --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
+              tags: |
+                tap-$(Build.BuildId)
+                tap-latest
+
+          - task: Docker@2
+            displayName: 'Push TAP Image'
+            inputs:
+              command: push
+              repository: racing-game-frontend
+              containerRegistry: '$(acrName)'
+              tags: |
+                tap-$(Build.BuildId)
+                tap-latest
+
+      - job: BuildMotion
+        displayName: 'Build MOTION Version'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: Docker@2
+            displayName: 'Build MOTION Image'
+            inputs:
+              command: build
+              repository: racing-game-frontend
+              dockerfile: 'client/Dockerfile.motion'
+              containerRegistry: '$(acrName)'
+              arguments: |
+                --build-arg REACT_APP_API_URL=$(REACT_APP_API_URL)
+                --build-arg REACT_APP_WS_URL=$(REACT_APP_WS_URL)
+              tags: |
+                motion-$(Build.BuildId)
+                motion-latest
+
+          - task: Docker@2
+            displayName: 'Push MOTION Image'
+            inputs:
+              command: push
+              repository: racing-game-frontend
+              containerRegistry: '$(acrName)'
+              tags: |
+                motion-$(Build.BuildId)
+                motion-latest
+
+  - stage: DeployCanary
+    displayName: 'Deploy Canary (80/20)'
+    dependsOn: BuildVersions
+    condition: succeeded()
+    jobs:
+      - deployment: DeployCanaryRelease
+        displayName: 'Deploy with Traffic Split'
+        environment: 'Production-Canary'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: 'Get Current Stable Revision'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      STABLE_REV=$(az containerapp revision list \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --query "[?contains(name, 'tap')].name | [0]" \
+                        --output tsv)
+                      
+                      echo "##vso[task.setvariable variable=stableRevision]$STABLE_REV"
+
+                - task: AzureCLI@2
+                  displayName: 'Deploy MOTION as Canary'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az containerapp update \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --image $(acrName).azurecr.io/racing-game-frontend:motion-$(Build.BuildId) \
+                        --revision-suffix motion-$(Build.BuildId)
+
+                - task: AzureCLI@2
+                  displayName: 'Configure Traffic Split (80/20)'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      CANARY_REV=$(az containerapp revision list \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --query "[0].name" \
+                        --output tsv)
+                      
+                      az containerapp ingress traffic set \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --revision-weight \
+                          $(stableRevision)=80 \
+                          $CANARY_REV=20
+                      
+                      echo "✅ Canary deployed with 20% traffic"
+
+  - stage: PromoteOrRollback
+    displayName: 'Promote or Rollback'
+    dependsOn: DeployCanary
+    condition: succeeded()
+    jobs:
+      - deployment: Decision
+        displayName: 'Manual Approval for Promotion'
+        environment: 'Production-Promote'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: 'Promote Canary to 100%'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      CANARY_REV=$(az containerapp revision list \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --query "[?contains(name, 'motion')].name | [0]" \
+                        --output tsv)
+                      
+                      az containerapp ingress traffic set \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --revision-weight $CANARY_REV=100
+                      
+                      echo "🎉 Canary promoted to production (100%)"

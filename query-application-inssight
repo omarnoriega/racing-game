@@ -1,0 +1,21 @@
+// Comparar errores entre revisiones
+requests
+| where cloud_RoleName == "racing-game-frontend"
+| extend revision = tostring(customDimensions.revision)
+| summarize 
+    totalRequests = count(),
+    successRate = countif(success == true) * 100.0 / count(),
+    avgDuration = avg(duration)
+    by revision, bin(timestamp, 5m)
+| render timechart
+
+// Comparar latencia
+requests
+| where cloud_RoleName == "racing-game-frontend"
+| extend revision = tostring(customDimensions.revision)
+| summarize 
+    p50 = percentile(duration, 50),
+    p95 = percentile(duration, 95),
+    p99 = percentile(duration, 99)
+    by revision
+| render barchart
