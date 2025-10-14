@@ -1,7 +1,12 @@
 # Azure DevOps Pipeline - Racing Game
 # CI/CD para Azure Container Apps
 
-trigger: none
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/tap
 pr:
   branches:
     include:
@@ -40,7 +45,98 @@ variables:
   # Configuración
   - group: 'racing-game-config' 
 
+  - name: appName
+    value: 'racing-game-frontend'
+  - name: keepRevisions
+    value: 1
+  - name: backendApp
+    value: 'racing-game-backend'
+  - name: frontendApp
+    value: 'racing-game-frontend'
+
 stages:
+  # Stage 1: Limpieza Pre-Deploy
+  - stage: PreCleanup
+    displayName: 'Pre-Deploy Cleanup'
+    jobs:
+        - job: CleanupOldRevisions
+          displayName: 'Cleanup Old Revisions'
+          pool:
+            vmImage: 'ubuntu-latest'
+          steps:
+            - task: AzureCLI@2
+              displayName: 'Cleanup Backend Revisions'
+              inputs:
+                azureSubscription: '$(azureSubscription)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  echo "🧹 Cleaning up old backend revisions..."
+                  
+                  # Obtener revisiones (ordenadas, más reciente primero)
+                  REVISIONS=$(az containerapp revision list \
+                    --name $(backendApp) \
+                    --resource-group $(resourceGroup) \
+                    --query "sort_by([].{name:name, created:properties.createdTime}, &created) | reverse(@) | [].name" \
+                    --output tsv)
+                  
+                  # Contar revisiones
+                  TOTAL=$(echo "$REVISIONS" | wc -l)
+                  echo "Total revisions: $TOTAL"
+                  
+                  # Si hay más revisiones que las que queremos mantener
+                  if [ $TOTAL -gt $(keepRevisions) ]; then
+                    # Obtener revisiones a eliminar (todas excepto las últimas N)
+                    TO_DELETE=$(echo "$REVISIONS" | tail -n +$(($(keepRevisions) + 1)))
+                    
+                    for REV in $TO_DELETE; do
+                      echo "Deactivating: $REV"
+                      az containerapp revision deactivate \
+                        --name $(backendApp) \
+                        --resource-group $(resourceGroup) \
+                        --revision $REV \
+                        --output none || true
+                    done
+                    
+                    echo "✅ Cleanup completed"
+                  else
+                    echo "✅ No cleanup needed"
+                  fi
+
+            - task: AzureCLI@2
+              displayName: 'Cleanup Frontend Revisions'
+              inputs:
+                azureSubscription: '$(azureSubscription)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  echo "🧹 Cleaning up old frontend revisions..."
+                  
+                  REVISIONS=$(az containerapp revision list \
+                    --name $(frontendApp) \
+                    --resource-group $(resourceGroup) \
+                    --query "sort_by([].{name:name, created:properties.createdTime}, &created) | reverse(@) | [].name" \
+                    --output tsv)
+                  
+                  TOTAL=$(echo "$REVISIONS" | wc -l)
+                  echo "Total revisions: $TOTAL"
+                  
+                  if [ $TOTAL -gt $(keepRevisions) ]; then
+                    TO_DELETE=$(echo "$REVISIONS" | tail -n +$(($(keepRevisions) + 1)))
+                    
+                    for REV in $TO_DELETE; do
+                      echo "Deactivating: $REV"
+                      az containerapp revision deactivate \
+                        --name $(frontendApp) \
+                        --resource-group $(resourceGroup) \
+                        --revision $REV \
+                        --output none || true
+                    done
+                    
+                    echo "✅ Cleanup completed"
+                  else
+                    echo "✅ No cleanup needed"
+                  fi
   - stage: Build
     displayName: 'Build and Push Docker Images'
     jobs:
@@ -135,7 +231,8 @@ stages:
                       az containerapp update \
                         --name $(backendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(backendImageName):tap-latest \
+                        --image $(acrLoginServer)/$(backendImageName):tap-$(imageTag) \
+                        --revision-suffix tap-$(imageTag) \
                         --set-env-vars \
                           NODE_ENV=development \
                           PORT=3001 \
@@ -152,4 +249,73 @@ stages:
                       az containerapp update \
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
-                        --image $(acrLoginServer)/$(frontendImageName):tap-latest
+                        --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag)
+                        --revision-suffix tap-$(imageTag)
+
+
+                - task: AzureCLI@2
+                  displayName: 'Configure Traffic 100%'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      TAP_REV=$(az containerapp revision list \
+                        --name $(appName) \
+                        --resource-group $(resourceGroup) \
+                        --query "[0].name" \
+                        --output tsv)
+                      
+                      az containerapp ingress traffic set \
+                        --name $(frontendAppName) \
+                        --resource-group $(resourceGroup) \
+                        --revision-weight \
+                          $TAP_REV=100
+                      
+                      echo "✅ Canary deployed with 20% traffic"        
+# Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
+  - stage: PostCleanup
+    displayName: 'Post-Deploy Cleanup'
+    dependsOn: DeployToDev
+    condition: succeeded()
+    jobs:
+      - job: FinalCleanup
+        displayName: 'Remove Zero-Traffic Revisions'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Remove Zero-Traffic Revisions'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "🧹 Removing revisions with 0% traffic..."
+                
+                for APP in $(backendApp) $(frontendApp); do
+                  echo "Processing: $APP"
+                  
+                  # Obtener revisiones con 0% de tráfico
+                  ZERO_TRAFFIC=$(az containerapp revision list \
+                    --name $APP \
+                    --resource-group $(resourceGroup) \
+                    --query "[?properties.trafficWeight==\`0\` && properties.active==\`true\`].name" \
+                    --output tsv)
+                  
+                  if [ -z "$ZERO_TRAFFIC" ]; then
+                    echo "  No zero-traffic revisions found"
+                    continue
+                  fi
+                  
+                  for REV in $ZERO_TRAFFIC; do
+                    echo "  Deactivating: $REV"
+                    az containerapp revision deactivate \
+                      --name $APP \
+                      --resource-group $(resourceGroup) \
+                      --revision $REV \
+                      --output none || true
+                  done
+                done
+                
+                echo "✅ Post-cleanup completed"                      
