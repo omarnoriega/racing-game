@@ -89,7 +89,7 @@ const handlePaste = (e) => {
       <div className="home-header">
         <h1>🏁 Racing Game</h1>
         <p className="subtitle">Compite en carreras multijugador</p>
-        🚀 From Tuta with love (version only tab)
+        Kyndryl Consult - Colombia 
       </div>
       
       
