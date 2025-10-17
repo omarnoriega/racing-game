@@ -250,5 +250,11 @@ stages:
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
                         --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag) \
-                        --revision-suffix tap-$(imageTag)                 
+                        --revision-suffix tap-$(imageTag)
+                      
+                      az containerapp traffic set \
+                        --name $(frontendAppName) \
+                        --resource-group $(resourceGroup) \
+                        --revision-weight $(frontendAppName)-tap-$(imageTag) >=100
+                   
                       echo "✅ Version deployed with 100% traffic"          
