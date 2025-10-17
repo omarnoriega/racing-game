@@ -97,3 +97,9 @@ Al finalizar cada partida podrás ver:
 - Total de taps de ambos equipos
 - Estadísticas por equipo
 - Promedio de taps por jugador
+
+## Acceso
+
+### [BACKEND_URL](https://racing-game-backend.gentleisland-51245d58.westus2.azurecontainerapps.io)
+
+### [FRONTEND_URL](https://racing-game-frontend.gentleisland-51245d58.westus2.azurecontainerapps.io)
