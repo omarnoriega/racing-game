@@ -252,9 +252,23 @@ stages:
                         --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag) \
                         --revision-suffix tap-$(imageTag)
                       
-                      az containerapp traffic set \
-                        --name $(frontendAppName) \
-                        --resource-group $(resourceGroup) \
-                        --revision-weight $(frontendAppName)-tap-$(imageTag) >=100
-                   
-                      echo "✅ Version deployed with 100% traffic"          
+                - task: AzureCLI@2
+                  displayName: 'Configure Traffic 100% to New Revision'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      TAP_REV=$(az containerapp revision list \
+                          --name $(appName) \
+                          --resource-group $(resourceGroup) \
+                          --query "[0].name" \
+                          --output tsv)
+                        
+                        az containerapp ingress traffic set \
+                          --name $(appName) \
+                          --resource-group $(resourceGroup) \
+                          --revision-weight \
+                            $TAP_REV=100
+                        
+                        echo "✅ Canary deployed with 100% traffic"                      
