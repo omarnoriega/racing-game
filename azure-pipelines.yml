@@ -250,28 +250,8 @@ stages:
                         --name $(frontendAppName) \
                         --resource-group $(resourceGroup) \
                         --image $(acrLoginServer)/$(frontendImageName):tap-$(imageTag) \
-                        --revision-suffix tap-$(imageTag)
-
-                - task: AzureCLI@2
-                  displayName: 'Configure Traffic 100%'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      TAP_REV=$(az containerapp revision list \
-                        --name $(appName) \
-                        --resource-group $(resourceGroup) \
-                        --query "[0].name" \
-                        --output tsv)
-                      
-                      az containerapp ingress traffic set \
-                        --name $(frontendAppName) \
-                        --resource-group $(resourceGroup) \
-                        --revision-weight \
-                          $TAP_REV=100
-                      
-                      echo "✅ Canary deployed with 20% traffic"        
+                        --revision-suffix tap-$(imageTag)                 
+                      echo "✅ Version deployed with 100% traffic"        
 # Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
   - stage: PostCleanup
     displayName: 'Post-Deploy Cleanup'

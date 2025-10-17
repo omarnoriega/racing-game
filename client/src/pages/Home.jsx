@@ -36,13 +36,6 @@ function Home() {
     setShowConfigModal(false);
   };
 
-  /*
-  const joinGame = () => {
-    if (gameId.trim()) {
-      navigate(`/game/${gameId}`);
-    }
-  };
-  */
 
 const joinGame = () => {
     const cleanId = cleanGameId(gameId);
@@ -61,13 +54,6 @@ const joinGame = () => {
     navigate(`/game/${cleanId}`);
   };
 
-  /*
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setGameId(value);
-    setError('');
-  };
-*/
 
   const handleInputChange = (e) => {
     let value = e.target.value.toUpperCase();
@@ -103,7 +89,7 @@ const handlePaste = (e) => {
       <div className="home-header">
         <h1>🏁 Racing Game</h1>
         <p className="subtitle">Compite en carreras multijugador</p>
-        🚀 From Tuta with love
+        🚀 From Tuta with love (version only tab)
       </div>
       
       
