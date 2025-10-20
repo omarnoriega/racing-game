@@ -292,53 +292,6 @@ stages:
                       
                       echo "✅ Canary deployed with 20% traffic"
 
-# Stage 4: Post-Deploy Cleanup (opcional, más agresivo)
-  - stage: PostCleanup
-    displayName: 'Post-Deploy Cleanup'
-    dependsOn: DeployCanary
-    condition: succeeded()
-    jobs:
-      - job: FinalCleanup
-        displayName: 'Remove Zero-Traffic Revisions'
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - task: AzureCLI@2
-            displayName: 'Remove Zero-Traffic Revisions'
-            inputs:
-              azureSubscription: '$(azureSubscription)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "🧹 Removing revisions with 0% traffic..."
-                
-                for APP in $(backendApp) $(frontendApp); do
-                  echo "Processing: $APP"
-                  
-                  # Obtener revisiones con 0% de tráfico
-                  ZERO_TRAFFIC=$(az containerapp revision list \
-                    --name $APP \
-                    --resource-group $(resourceGroup) \
-                    --query "[?properties.trafficWeight==\`0\` && properties.active==\`true\`].name" \
-                    --output tsv)
-                  
-                  if [ -z "$ZERO_TRAFFIC" ]; then
-                    echo "  No zero-traffic revisions found"
-                    continue
-                  fi
-                  
-                  for REV in $ZERO_TRAFFIC; do
-                    echo "  Deactivating: $REV"
-                    az containerapp revision deactivate \
-                      --name $APP \
-                      --resource-group $(resourceGroup) \
-                      --revision $REV \
-                      --output none || true
-                  done
-                done
-                
-                echo "✅ Post-cleanup completed"
-
 
 resources:
   repositories:
